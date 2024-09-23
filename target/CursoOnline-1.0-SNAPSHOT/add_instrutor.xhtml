@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<h:head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
+    <style>
+        .green-label {
+            color: black; /* Cor do título do label em preto */
+            display: block;
+            margin-bottom: 5px;
+        }
+        .green-input {
+            background-color: #d4edda; /* Fundo verde claro */
+            border: 2px solid #006400; /* Borda verde escuro */
+            border-radius: 8px; /* Borda arredondada */
+            padding: 8px; /* Espaçamento interno */
+            color: black; /* Cor do texto */
+        }
+    </style>
+    <title>Adicionar Novo Instrutor</title>
+</h:head>
+<h:body style="background-color: white;">
+    <div class="container mt-5">
+        <h1 class="text-center text-success">Adicionar Novo Instrutor</h1>
+        
+        <!-- Formulário para adicionar um novo instrutor -->
+        <h:form>
+            <div class="form-group">
+                <h:outputLabel value="Nome do Instrutor" styleClass="green-label" />
+                <h:inputText id="instrutorName" value="#{instrutorBean.newInstrutor.nome}" styleClass="form-control green-input" required="true" />
+            </div>
+            <div class="form-group">
+                <h:outputLabel value="Especialidade" styleClass="green-label" />
+                <h:inputText id="instrutorEspecialidade" value="#{instrutorBean.newInstrutor.especialidade}" styleClass="form-control green-input" required="true" />
+            </div>
+            <h:commandButton value="Adicionar Instrutor" action="#{instrutorBean.addInstrutor}" class="btn btn-success mt-3" />
+        </h:form>
+
+        <hr />
+
+        <!-- Lista de instrutores existentes -->
+        <h:form>
+            <h2 class="text-success">Instrutores Cadastrados</h2>
+            <h:dataTable value="#{instrutorBean.instrutores}" var="instrutor" class="table table-striped table-bordered">
+                <h:column>
+                    <f:facet name="header">Nome</f:facet>
+                    #{instrutor.nome}
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Especialidade</f:facet>
+                    <h:inputText value="#{instrutor.especialidade}" styleClass="green-input" />
+                    <h:commandButton value="Salvar" action="#{instrutorBean.updateEspecialidade(instrutor)}" class="btn btn-warning btn-sm" />
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Cursos Associados</f:facet>
+                    <ui:repeat value="#{instrutor.cursos}" var="curso">
+                        <div>#{curso.nome}</div>
+                    </ui:repeat>
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Ações</f:facet>
+                    <h:commandButton value="Excluir" action="#{instrutorBean.deleteInstrutor(instrutor)}" class="btn btn-danger btn-sm" />
+                </h:column>
+            </h:dataTable>
+        </h:form>
+
+        <!-- Botão para voltar à página de gerenciamento de cursos -->
+        <h:form>
+            <h:commandButton value="Voltar" action="gerenciamento_cursos?faces-redirect=true" class="btn btn-light mt-3" />
+        </h:form>
+    </div>
+</h:body>
+</html>
