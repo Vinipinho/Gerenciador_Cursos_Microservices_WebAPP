@@ -1,43 +1,45 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.myproject.bean;
 
-import jakarta.enterprise.context.RequestScoped; // Alterado para RequestScoped
+import jakarta.enterprise.context.SessionScoped;
 import jakarta.inject.Named;
 import java.io.Serializable;
 import java.util.List;
-import com.myproject.dao.CursoDAO;
-import com.myproject.dao.InstrutorDAO;
 import com.myproject.entity.Curso;
-import com.myproject.entity.Instrutor;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 @Named("cursoBean")
-@RequestScoped // Alterado para RequestScoped
+@RequestScoped
 public class CursoBean implements Serializable {
     private List<Curso> cursos;
-    private CursoDAO cursoDAO = new CursoDAO();
-    private InstrutorDAO instrutorDAO = new InstrutorDAO();
-    private List<Instrutor> instrutores;
     private Curso newCurso = new Curso(); // Novo curso a ser adicionado
-    private Curso selectedCurso; // Curso selecionado para edição
 
-    // Carregar a lista de cursos ao inicializar
+    // Carregar a lista de Cursos ao inicializar
     public List<Curso> getCursos() {
         if (cursos == null) {
-            cursos = cursoDAO.getAllCursos();
+            Client client = ClientBuilder.newClient();
+            try {
+                cursos = client.target("http://localhost:8084/curso")
+                        .request(MediaType.APPLICATION_JSON)
+                        .get(new GenericType<List<Curso>>() {});
+            } catch (Exception e) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Falha ao carregar cursos."));
+                e.printStackTrace();
+                cursos = List.of(); // Inicializa com uma lista vazia em caso de erro
+            } finally {
+                client.close();
+            }
         }
         return cursos;
     }
-    
-    public void updateCurso(Curso curso) {
-    if (curso != null) {
-        cursoDAO.updateCurso(curso); // Atualiza o curso no banco de dados
-        cursos = cursoDAO.getAllCursos(); // Atualiza a lista de cursos após a alteração
-    }
-}
-
 
     public Curso getNewCurso() {
         return newCurso;
@@ -47,45 +49,87 @@ public class CursoBean implements Serializable {
         this.newCurso = newCurso;
     }
 
-    public Curso getSelectedCurso() {
-        return selectedCurso;
-    }
-
-    public void setSelectedCurso(Curso selectedCurso) {
-        this.selectedCurso = selectedCurso;
-    }
-
     // Método para adicionar um novo curso
     public String addCurso() {
-        cursoDAO.addCurso(newCurso);
-        cursos = cursoDAO.getAllCursos(); // Atualiza a lista de cursos
+        Client client = ClientBuilder.newClient();
+        try {
+            Response response = client.target("http://localhost:8084/curso/add")
+                    .request(MediaType.APPLICATION_JSON)
+                    .post(Entity.entity(newCurso, MediaType.APPLICATION_JSON));
+
+            if (response.getStatus() == Response.Status.CREATED.getStatusCode()) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage("Curso cadastrado com sucesso!"));
+                cursos = null; // Força atualização da lista de cursos
+            } else {
+                String mensagemErro = response.readEntity(String.class);
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", mensagemErro));
+            }
+        } catch (Exception e) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Falha ao cadastrar curso."));
+            e.printStackTrace();
+        } finally {
+            client.close();
+        }
         newCurso = new Curso(); // Limpa o formulário
-        return "gerenciamento_cursos?faces-redirect=true"; // Redireciona para a página de gerenciamento
+        return "add_curso?faces-redirect=true";
     }
 
-    // Método para atualizar a descrição do curso
-    public void updateCurso() {
-        if (selectedCurso != null) {
-            cursoDAO.updateCurso(selectedCurso); // Atualiza o curso no banco de dados
-            cursos = cursoDAO.getAllCursos(); // Atualiza a lista de cursos
-            selectedCurso = null; // Limpa o curso selecionado
+    // Método para atualizar um curso existente
+    public void updateCurso(Curso curso) {
+        if (curso != null) {
+            Client client = ClientBuilder.newClient();
+            try {
+                Response response = client.target("http://localhost:8084/curso/update")
+                        .request(MediaType.APPLICATION_JSON)
+                        .put(Entity.entity(curso, MediaType.APPLICATION_JSON));
+
+                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                    FacesContext.getCurrentInstance().addMessage(null,
+                            new FacesMessage("Curso atualizado com sucesso!"));
+                } else {
+                    String mensagemErro = response.readEntity(String.class);
+                    FacesContext.getCurrentInstance().addMessage(null,
+                            new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", mensagemErro));
+                }
+            } catch (Exception e) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Falha ao atualizar curso."));
+                e.printStackTrace();
+            } finally {
+                client.close();
+            }
+            cursos = null; // Força atualização da lista de cursos
         }
     }
 
-    // Método para excluir um curso e atualizar a lista de instrutores
+    // Método para excluir um curso
     public void deleteCurso(Curso curso) {
         if (curso != null) {
-            cursoDAO.deleteCurso(curso.getId()); // Remove o curso do banco de dados
-            cursos = cursoDAO.getAllCursos(); // Atualiza a lista de cursos
-            instrutores = instrutorDAO.getAllInstrutores(); // Atualiza a lista de instrutores
-        }
-    }
+            Client client = ClientBuilder.newClient();
+            try {
+                Response response = client.target("http://localhost:8084/curso/delete/" + curso.getId())
+                        .request()
+                        .delete();
 
-    // Getter para a lista de instrutores
-    public List<Instrutor> getInstrutores() {
-        if (instrutores == null) {
-            instrutores = instrutorDAO.getAllInstrutores();
+                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                    FacesContext.getCurrentInstance().addMessage(null,
+                            new FacesMessage("Curso excluído com sucesso!"));
+                    cursos = null; // Força atualização da lista de cursos
+                } else {
+                    String mensagemErro = response.readEntity(String.class);
+                    FacesContext.getCurrentInstance().addMessage(null,
+                            new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", mensagemErro));
+                }
+            } catch (Exception e) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Falha ao excluir curso."));
+                e.printStackTrace();
+            } finally {
+                client.close();
+            }
         }
-        return instrutores;
     }
 }

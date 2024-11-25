@@ -1,12 +1,12 @@
-com\myproject\dao\InstrutorDAO.class
 com\myproject\entity\Curso.class
+com\myproject\bean\EstudanteBean$1.class
 com\myproject\bean\EstudanteBean.class
 com\myproject\bean\LoginBean.class
 com\myproject\bean\InstrutorBean.class
 com\myproject\entity\Instrutor.class
 com\myproject\bean\CursoBean.class
-com\myproject\dao\CursoDAO.class
+com\myproject\bean\InstrutorBean$1.class
 com\myproject\entity\Estudante.class
-com\myproject\dao\EstudanteDAO.class
 com\mycompany\cursoonline2\resources\JakartaEE10Resource.class
 com\mycompany\cursoonline2\JakartaRestConfiguration.class
+com\myproject\bean\CursoBean$1.class
